@@ -1,0 +1,439 @@
+/* =============================================================
+   信封拆信组件 · 独立模块
+   引入方式：<link rel="stylesheet" href="envelope.css">
+   依赖：CSS 变量 --pink / --pink-deep（在主文件 :root 中定义）
+   ============================================================= */
+
+/* -------------- 信封本体（真实信封结构） -------------- */
+.envelope {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  height: 320px;
+  margin: 30px auto;
+  background: linear-gradient(160deg, #FAF0E0 0%, #F5E6D0 100%);
+  border-radius: 6px;
+  box-shadow: 0 16px 48px rgba(120, 80, 60, 0.28), 0 2px 6px rgba(120,80,60,0.12);
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  animation: envelope-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  overflow: hidden;
+  border: 1px solid #E8D5B5;
+  perspective: 1200px;          /* 3D 透视容器 */
+}
+.envelope:hover { transform: translateY(-4px); box-shadow: 0 22px 56px rgba(120,80,60,0.38); }
+@keyframes envelope-pop {
+  0% { opacity: 0; transform: scale(0.9) rotate(-2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-0.5deg); }
+}
+
+/* 信封下半截（正面） */
+.envelope-front {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 65%;
+  background: linear-gradient(0deg, #F0DDC0 0%, #F7E9D4 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding-top: 10px;
+  z-index: 1;
+  border-top: 1px solid #E0CCAB;
+}
+
+/* 信封上半截翻盖（三角形，盖在正面上） */
+.envelope-flap {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(160deg, #FAF0E0 0%, #F0DDC0 100%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  z-index: 3;
+  transform-origin: top center;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;    /* 保留 3D 翻转 */
+  backface-visibility: hidden;     /* 翻面时隐藏背面 */
+  cursor: pointer;
+}
+.envelope:hover .envelope-flap { transform: rotateX(30deg); }
+/* 拆信时翻盖向后翻转 180° */
+.envelope.opened .envelope-flap { transform: rotateX(-180deg); }
+
+/* 信封两侧三角形（侧面） */
+.envelope::before,
+.envelope::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 50%;
+  height: 65%;
+  z-index: 2;
+  pointer-events: none;
+}
+.envelope::before {
+  left: 0;
+  background: linear-gradient(45deg, #E8D4B2, #F2E2C4);
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+.envelope::after {
+  right: 0;
+  background: linear-gradient(-45deg, #E8D4B2, #F2E2C4);
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+/* 中间垂直丝带（封口） */
+.envelope-ribbon-top {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  background: linear-gradient(90deg, #F9A8D4, #F472B6, #F9A8D4);
+  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35), inset 0 -1px 2px rgba(0,0,0,0.1);
+  z-index: 4;
+}
+
+/* 火漆印章（盖在丝带与翻盖交界处） */
+.envelope-wax {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #F87171, #DC2626 55%, #7F1D1D 100%);
+  color: white;
+  font-size: 1.5rem;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow:
+    0 4px 12px rgba(180, 20, 20, 0.45),
+    inset -3px -4px 8px rgba(0,0,0,0.35),
+    inset 2px 2px 4px rgba(255,255,255,0.15);
+  z-index: 6;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.envelope:hover .envelope-wax { transform: translate(-50%, -50%) rotate(-6deg) scale(1.06); }
+
+/* 信封飞走：绝对定位脱离文档流，信纸立刻顶上来 */
+.envelope.opened-fly {
+  position: absolute !important;  /* 脱离文档流，信纸瞬间顶上来 */
+  left: 50%;
+  transform: translateX(-50%);
+  animation: envelope-flyaway 0.5s ease forwards;
+  pointer-events: none;
+  margin: 0;
+}
+@keyframes envelope-flyaway {
+  0% { opacity: 1; transform: translateX(-50%) rotate(-0.5deg); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-260px) rotate(-15deg) scale(0.85); }
+}
+.envelope.opened-gone { display: none !important; }
+
+/* 信封正面文字 */
+.envelope-to {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #7C2D12;
+  letter-spacing: 3px;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 5;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+}
+.envelope-from {
+  font-size: 0.8rem;
+  color: #9A3412;
+  opacity: 0.75;
+  margin-bottom: 0;
+  position: relative;
+  z-index: 5;
+}
+.envelope-open {
+  position: relative;
+  z-index: 5;
+  background: linear-gradient(135deg, var(--pink), var(--pink-deep));
+  color: white;
+  font-weight: 800;
+  padding: 10px 28px;
+  border-radius: 22px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+  transition: transform 0.2s ease;
+  margin-top: 12px;
+}
+.envelope-open:hover { transform: scale(1.05); }
+.envelope-open:active { transform: scale(0.97); }
+
+/* -------------- 信纸 -------------- */
+.letter {
+  display: block;
+  position: relative;
+  max-width: 880px;
+  margin: 30px auto;
+  background: #FFFEF7;
+  border-radius: 6px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  padding: 60px 64px 68px;
+  transform: rotate(-0.8deg);
+  overflow: visible;
+}
+.letter-hidden {
+  display: none;
+}
+.letter-slide-in {
+  display: block;
+  animation: letter-slide 0.8s cubic-bezier(0.2, 1.2, 0.4, 1) forwards;
+}
+@keyframes letter-slide {
+  0%   { opacity: 0; transform: rotate(-0.8deg) scale(0.9) translateY(20px); }
+  60%  { opacity: 1; transform: rotate(-0.8deg) scale(1.01) translateY(-4px); }
+  100% { opacity: 1; transform: rotate(-0.8deg) scale(1) translateY(0); }
+}
+
+/* 和纸胶带 */
+.letter-tape {
+  position: absolute;
+  width: 90px; height: 22px;
+  background: linear-gradient(90deg, #F9A8D4, #FCE7F3, #F9A8D4);
+  opacity: 0.82;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  z-index: 3;
+}
+.tape-left { top: -10px; left: 30px; transform: rotate(-12deg); border-radius: 2px; }
+.tape-right { top: -10px; right: 30px; transform: rotate(10deg); border-radius: 2px; }
+
+/* 信头 */
+.letter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  border-bottom: 1px dashed #E5E7EB;
+  padding-bottom: 14px;
+}
+.letter-salutation {
+  font-family: 'Kaiti SC', 'STKaiti', '楷体', cursive;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #831843;
+  line-height: 1.6;
+}
+/* 邮票（再放大版） */
+.letter-stamp {
+  position: relative;
+  width: 150px; height: 190px;
+  background: linear-gradient(135deg, #FBCFE8, #F9A8D4);
+  border: 3px dashed #BE185D;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  transform: rotate(4deg);
+  box-shadow: 0 5px 14px rgba(0,0,0,0.18);
+  padding: 10px;
+}
+.stamp-inner {
+  font-size: 3rem;
+  color: #831843;
+  text-align: center;
+  line-height: 1.2;
+}
+.stamp-inner small { font-size: 0.85rem; font-weight: 800; letter-spacing: 1px; }
+/* 邮戳 */
+.stamp-postmark {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-22deg);
+  font-size: 0.42rem;
+  font-weight: 900;
+  color: rgba(0,0,0,0.45);
+  border: 1.5px solid rgba(0,0,0,0.35);
+  border-radius: 50%;
+  width: 76px; height: 76px;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  line-height: 1.3;
+  pointer-events: none;
+  font-family: 'Arial Black', sans-serif;
+}
+
+/* 信纸正文：手写风 */
+.letter-paper {
+  padding: 8px 0;
+  font-family: 'Kaiti SC', 'STKaiti', '楷体', cursive;
+  font-size: 1.5rem;
+  line-height: 2.3;
+  color: #4B5563;
+}
+.letter-line {
+  font-family: inherit;
+  line-height: inherit;
+  color: inherit;
+  font-weight: 500;
+  padding-left: 36px;
+  text-indent: 0;
+  opacity: 0;
+  animation: line-fade 0.6s ease forwards;
+  margin-bottom: 6px;
+}
+@keyframes line-fade {
+  0% { opacity: 0; transform: translateX(-10px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+/* 祝福高亮：荧光笔 */
+.blessing-highlight {
+  color: #BE185D;
+  font-weight: 700;
+  background: linear-gradient(transparent 55%, rgba(251,191,36,0.45) 55%);
+  padding: 0 2px;
+}
+
+/* 落款 */
+.letter-footer {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px dashed #E5E7EB;
+  text-align: right;
+  color: #6B7280;
+  font-weight: 500;
+  line-height: 1.9;
+}
+.letter-sign { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; position: relative; }
+.letter-sign-name { font-family: 'Kaiti SC', 'STKaiti', '楷体', cursive; font-size: 1.65rem; font-weight: 700; color: #831843; }
+/* 信纸落款火漆（原 56px × 1.5 = 84px） */
+.letter-wax-seal {
+  position: absolute;
+  right: -10px; bottom: -72px;
+  width: 84px; height: 84px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #F87171, #DC2626 65%, #991B1B);
+  color: white;
+  font-size: 2.1rem;
+  font-weight: 900;
+  font-family: 'Kaiti SC', 'STKaiti', '楷体', cursive;
+  display: flex; align-items: center; justify-content: center;
+  transform: rotate(-12deg);
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35), inset -2px -3px 8px rgba(0,0,0,0.25), inset 2px 2px 6px rgba(255,255,255,0.15);
+  z-index: 5;
+  animation: wax-drop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) 1.2s forwards;
+  opacity: 0;
+}
+@keyframes wax-drop {
+  0% { opacity: 0; transform: rotate(-12deg) scale(2.2); }
+  60% { opacity: 1; transform: rotate(-12deg) scale(0.9); }
+  100% { opacity: 1; transform: rotate(-12deg) scale(1); }
+}
+
+/* -------------- 拆信特效 -------------- */
+.wax-shard {
+  position: fixed;
+  width: 12px; height: 12px;
+  border-radius: 50% 20% 50% 20%;
+  background: radial-gradient(circle at 30% 30%, #FCA5A5, #DC2626 70%, #991B1B);
+  box-shadow: 0 0 6px rgba(220,38,38,0.5);
+  z-index: 999;
+  pointer-events: none;
+}
+.letter-burst {
+  position: fixed;
+  width: 60px;
+  height: 0;
+  background: linear-gradient(
+    to top,
+    rgba(249,168,212,0.9),
+    rgba(252,211,77,0.8),
+    rgba(255,255,255,0.95)
+  );
+  border-radius: 30px;
+  box-shadow: 0 0 60px 20px rgba(249,168,212,0.6), 0 0 120px 40px rgba(252,211,77,0.4);
+  z-index: 998;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: burst-up 1.1s ease-out forwards;
+}
+@keyframes burst-up {
+  0%   { height: 0; opacity: 0; }
+  15%  { height: 0; opacity: 1; }
+  40%  { height: 180px; opacity: 1; }
+  75%  { height: 280px; opacity: 0.9; }
+  100% { height: 400px; opacity: 0; }
+}
+
+/* =============================================================
+   移动端适配（≤ 640px）
+   ============================================================= */
+@media (max-width: 640px) {
+  /* 信封：撑满但不超，高度缩小 */
+  .envelope {
+    max-width: 100%;
+    height: 260px;
+    margin: 20px auto;
+  }
+  .envelope-wax { width: 52px; height: 52px; font-size: 1.2rem; top: 44%; }
+  .envelope-to { font-size: 1.05rem; letter-spacing: 2px; }
+  .envelope-from { font-size: 0.7rem; }
+  .envelope-open { padding: 8px 22px; font-size: 0.9rem; margin-top: 8px; }
+  .envelope-ribbon-top { width: 14px; }
+
+  /* 信纸：撑满宽度，内边距大幅缩小 */
+  .letter {
+    max-width: 100%;
+    margin: 20px auto;
+    padding: 32px 22px 48px;
+    transform: rotate(-0.5deg);
+  }
+  @keyframes letter-slide {
+    0%   { opacity: 0; transform: rotate(-0.5deg) scale(0.92) translateY(14px); }
+    60%  { opacity: 1; transform: rotate(-0.5deg) scale(1.01) translateY(-3px); }
+    100% { opacity: 1; transform: rotate(-0.5deg) scale(1) translateY(0); }
+  }
+
+  /* 和纸胶带缩小 */
+  .letter-tape { width: 60px; height: 16px; }
+  .tape-left { left: 18px; }
+  .tape-right { right: 18px; }
+
+  /* 信头：改成上下排列（称呼在上，邮票在下居中） */
+  .letter-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+  }
+  .letter-salutation { font-size: 1.3rem; text-align: center; }
+
+  /* 邮票大幅缩小 */
+  .letter-stamp {
+    width: 90px; height: 115px;
+    padding: 6px;
+    border-width: 2px;
+  }
+  .stamp-inner { font-size: 1.9rem; }
+  .stamp-inner small { font-size: 0.6rem; letter-spacing: 0.5px; }
+  .stamp-postmark { font-size: 0.32rem; width: 56px; height: 56px; border-width: 1px; }
+
+  /* 正文缩小 */
+  .letter-paper { font-size: 1.15rem; line-height: 2; }
+  .letter-line { padding-left: 16px; margin-bottom: 4px; }
+
+  /* 落款 */
+  .letter-footer { margin-top: 20px; padding-top: 14px; line-height: 1.7; font-size: 0.9rem; }
+  .letter-sign-name { font-size: 1.2rem; }
+  .letter-sign { gap: 4px; }
+
+  /* 落款火漆缩小 */
+  .letter-wax-seal {
+    width: 56px; height: 56px;
+    font-size: 1.4rem;
+    right: -6px; bottom: -48px;
+  }
+
+  /* 信封飞走动画：距离缩短（因为信封本身变小了） */
+  @keyframes envelope-flyaway {
+    0% { opacity: 1; transform: translateX(-50%) rotate(-0.5deg); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-200px) rotate(-15deg) scale(0.85); }
+  }
+
+  /* 炸裂碎片、闪星缩小 */
+  .wax-shard { width: 8px; height: 8px; }
+}
